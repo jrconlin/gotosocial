@@ -19,11 +19,26 @@ package processing
 
 import (
 	"context"
+	"os"
+	"strings"
 
 	apimodel "github.com/superseriousbusiness/gotosocial/internal/api/model"
 	"github.com/superseriousbusiness/gotosocial/internal/gtserror"
 	"github.com/superseriousbusiness/gotosocial/internal/gtsmodel"
 )
+
+// Very dumb bool parse (to prevent package clutter)
+// Ideally, this should compare against a slice that contains the
+// local language specific set of "true" values, but go doesn't
+// appear to natively support `slice.contains()`
+func parseBool(value string) bool {
+	switch strings.ToLower(value) {
+	case "t", "true", "y", "yes", "1":
+		return true
+	default:
+		return false
+	}
+}
 
 func (p *Processor) PreferencesGet(ctx context.Context, accountID string) (*apimodel.Preferences, gtserror.WithCode) {
 	act, err := p.state.DB.GetAccountByID(ctx, accountID)
@@ -38,8 +53,8 @@ func (p *Processor) PreferencesGet(ctx context.Context, accountID string) (*apim
 		// The Reading* preferences don't appear to actually be settable by the
 		// client, so forcing some sensible defaults here
 		ReadingExpandMedia:    "default",
-		ReadingExpandSpoilers: false,
-		ReadingAutoPlayGifs:   false,
+		ReadingExpandSpoilers: parseBool(os.Getenv("GTS_EXPAND_SPOILERS")),
+		ReadingAutoPlayGifs:   parseBool(os.Getenv("GTS_PLAY_GIFS")),
 	}, nil
 }
 
